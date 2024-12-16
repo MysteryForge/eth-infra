@@ -1,0 +1,21 @@
+groups:
+  - name: kubernetes-apps
+    interval: 5m
+    rules:
+      - alert: EigenDAProcessedBatches
+        expr: |
+          node_eigenda_processed_batches_total{type="number"} - node_eigenda_processed_batches_total{type="number", status="signed"} > 0
+        for: 5m
+        annotations:
+          description: >
+            Number of signed batches are not increasing. Take a look at logs and see if you are signing.
+            If your node is not receiving any traffic, then you might not be signing.
+            You may want to check https://blobs-holesky.eigenda.xyz/ to see if there are confirmed blobs.
+            If yes, then you are missing out from serving these batches.
+            Please check the runbook for further debugging.
+          runbook_url: >
+            https://docs.eigenlayer.xyz/operator-guides/avs-installation-and-registration/eigenda-operator-guide/
+          summary: >
+            Number of signed batches are not increasing. This could be due to your node not being able to receive traffic.
+        labels:
+          severity: critical
