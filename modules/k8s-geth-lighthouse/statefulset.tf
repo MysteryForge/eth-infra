@@ -1,93 +1,64 @@
-resource "kubernetes_stateful_set" "holesky_geth_lighthouse" {
+resource "kubernetes_stateful_set" "geth_lighthouse" {
   metadata {
-    name      = "holesky-geth-lighthouse"
-    namespace = kubernetes_namespace.holesky_geth_lighthouse.metadata[0].name
+    name      = local.name
+    namespace = var.namespace
     labels = {
-      name                 = "node-huq"
+      name                 = local.name
       "eth-execution"      = "true"
       "eth-beacon"         = "true"
       "eth-execution-type" = "geth"
       "eth-beacon-type"    = "lighthouse"
-      "eth-network"        = "holesky"
-      "eth-node-key"       = "node-huq"
+      "eth-network"        = var.eth_network
     }
   }
   spec {
     replicas = 1
     selector {
       match_labels = {
-        name = "node-huq"
+        name = local.name
       }
     }
-    service_name = "node-huq"
+    service_name = local.name
     update_strategy {
       type = "RollingUpdate"
     }
     template {
       metadata {
         labels = {
-          name                 = "node-huq"
+          name                 = local.name
           "eth-execution"      = "true"
           "eth-beacon"         = "true"
           "eth-execution-type" = "geth"
           "eth-beacon-type"    = "lighthouse"
-          "eth-network"        = "holesky"
-          "eth-node-key"       = "node-huq"
+          "eth-network"        = var.eth_network
         }
       }
 
       spec {
-        image_pull_secrets {
-          name = "ghcr-secret"
-        }
-        termination_grace_period_seconds = 600
+        termination_grace_period_seconds = 320
         volume {
           name = "geth"
           persistent_volume_claim {
-            claim_name = "node-huq-geth"
+            claim_name = local.geth_pvc_name
           }
         }
         volume {
           name = "lighthouse"
           persistent_volume_claim {
-            claim_name = "node-huq-lighthouse"
+            claim_name = local.lighthouse_pvc_name
           }
         }
         volume {
           name = "jwtsecret"
           secret {
-            secret_name = kubernetes_secret.jwtsecret.metadata[0].name
+            secret_name = kubernetes_secret.jwtsecret.metadata.0.name
           }
         }
         container {
           name              = "geth"
-          image             = "ethereum/client-go:v1.14.12"
+          image             = var.geth_image
           image_pull_policy = "IfNotPresent"
-          args = [
-            "--holesky",
-            "--datadir=/data/geth",
-            "--port=14580",
-            "--discovery.port=14580",
-            "--http",
-            "--http.addr=0.0.0.0",
-            "--http.port=8545",
-            "--http.rpcprefix=/",
-            "--http.vhosts=*",
-            "--http.api=eth,net,engine,web3,debug,admin,les,txpool",
-            "--ws",
-            "--ws.addr=0.0.0.0",
-            "--ws.port=8546",
-            "--ws.origins=*",
-            "--ws.rpcprefix=/",
-            "--ws.api=eth,net,engine,web3,debug,txpool",
-            "--metrics",
-            "--metrics.addr=0.0.0.0",
-            "--metrics.port=6060",
-            "--authrpc.jwtsecret=/jwtsecret",
-            "--authrpc.addr=0.0.0.0",
-            "--authrpc.port=8551",
-            "--authrpc.vhosts=*"
-          ]
+          args              = var.geth_args
           # resources { }
           port {
             name           = "geth-discovery"
@@ -132,36 +103,9 @@ resource "kubernetes_stateful_set" "holesky_geth_lighthouse" {
 
         container {
           name              = "lighthouse"
-          image             = "sigp/lighthouse:v5.3.0"
+          image             = var.lighthouse_image
           image_pull_policy = "IfNotPresent"
-          args = [
-            "lighthouse",
-            "beacon_node",
-            "--network=holesky",
-            "--http",
-            "--http-address=0.0.0.0",
-            "--http-port=3500",
-            "--datadir=/data/lighthouse",
-            "--metrics",
-            "--metrics-address=0.0.0.0",
-            "--metrics-port=6061",
-            "--metrics-allow-origin=*",
-            "--execution-jwt=/jwtsecret",
-            "--execution-endpoint=http://localhost:8551",
-            "--checkpoint-sync-url=https://holesky.beaconstate.info",
-            "--prune-blobs=false",
-            "--blobs-dir=/data/lighthouse-blobs",
-            "--suggested-fee-recipient=$SUGGESTED_FEE_RECIPIENT"
-          ]
-          env {
-            name = "SUGGESTED_FEE_RECIPIENT"
-            value_from {
-              secret_key_ref {
-                name = "geth-lighthouse"
-                key  = "SUGGESTED_FEE_RECIPIENT"
-              }
-            }
-          }
+          args              = var.lighthouse_args
           port {
             name           = "beacon-http"
             container_port = 3500
