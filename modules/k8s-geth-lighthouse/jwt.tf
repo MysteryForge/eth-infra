@@ -8,8 +8,8 @@ resource "random_string" "jwtsecret" {
 
 resource "kubernetes_secret" "jwtsecret" {
   metadata {
-    name      = "jwtsecret"
-    namespace = kubernetes_namespace.holesky_geth_lighthouse.metadata[0].name
+    name      = local.jwt_name
+    namespace = var.namespace
   }
 
   data = {
