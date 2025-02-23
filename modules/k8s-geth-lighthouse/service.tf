@@ -1,14 +1,14 @@
-resource "kubernetes_service" "nodes" {
+resource "kubernetes_service" "geth_lighthouse" {
   metadata {
-    name      = "nodes"
-    namespace = kubernetes_namespace.holesky_geth_lighthouse.metadata.0.name
+    name      = local.name
+    namespace = var.namespace
     labels = {
-      name                 = "nodes"
+      name                 = local.name
       "eth-execution"      = "true"
       "eth-beacon"         = "true"
       "eth-execution-type" = "geth"
       "eth-beacon-type"    = "lighthouse"
-      "eth-network"        = "holesky"
+      "eth-network"        = var.eth_network
     }
   }
   spec {
@@ -54,7 +54,8 @@ resource "kubernetes_service" "nodes" {
       "eth-beacon"         = "true"
       "eth-execution-type" = "geth"
       "eth-beacon-type"    = "lighthouse"
-      "eth-network"        = "holesky"
+      "eth-network"        = var.eth_network
+      name                 = local.name
     }
     session_affinity = "None"
     type             = "ClusterIP"
