@@ -1,0 +1,17 @@
+.vscode/
+.DS_Store
+.env.local
+*.log
+/.direnv
+/.envrc.local
+/env
+.terraform
+.terraform.lock.hcl
+.terraform.tfstate.lock.info
+terraform.tfstate
+terraform.tfstate.backup
+.terragrunt-cache
+terraform_backend.tf
+**/svc/*
+/result*
+
