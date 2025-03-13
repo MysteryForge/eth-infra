@@ -1,15 +1,15 @@
 
-resource "kubernetes_ingress_v1" "holesky_geth_lighthouse" {
+resource "kubernetes_ingress_v1" "geth_lighthouse" {
   metadata {
-    name      = "geth-lighthouse"
-    namespace = kubernetes_namespace.holesky_geth_lighthouse.metadata[0].name
+    name      = local.name
+    namespace = var.namespace
     labels = {
-      name                                  = "geth-lighthouse"
+      name                 = local.name
       "eth-execution"      = "true"
       "eth-beacon"         = "true"
       "eth-execution-type" = "geth"
       "eth-beacon-type"    = "lighthouse"
-      "eth-network"        = "holesky"
+      "eth-network"        = var.eth_network
     }
     annotations = {
       "cert-manager.io/cluster-issuer"                      = "letsencrypt-prod"
@@ -20,7 +20,7 @@ resource "kubernetes_ingress_v1" "holesky_geth_lighthouse" {
       "nginx.ingress.kubernetes.io/proxy-body-size"         = "5m"
       "nginx.ingress.kubernetes.io/rewrite-target"          = "/$1"
       "nginx.ingress.kubernetes.io/auth-realm"              = "auth required"
-      "nginx.ingress.kubernetes.io/auth-secret"             = "ingress-basic-auth"
+      "nginx.ingress.kubernetes.io/auth-secret"             = var.basic_auth_secret_name
       "nginx.ingress.kubernetes.io/auth-type"               = "basic"
       "nginx.ingress.kubernetes.io/proxy-read-timeout"      = "600"
     }
@@ -29,27 +29,27 @@ resource "kubernetes_ingress_v1" "holesky_geth_lighthouse" {
   spec {
     ingress_class_name = "nginx"
     rule {
-      host = "holesky-node.${var.domain}"
+      host = var.host
       http {
         path {
-          path = "/cl/huq/(.*)"
+          path = "/cl/${var.name}/(.*)"
           backend {
             service {
-              name = kubernetes_service.holesky_geth_lighthouse.metadata.0.name
+              name = local.name
               port {
-                name = kubernetes_service.holesky_geth_lighthouse.spec.0.port.4.name
+                name = "beacon-http"
               }
             }
           }
           path_type = "ImplementationSpecific"
         }
         path {
-          path = "/ex/huq/(.*)"
+          path = "/ex/${var.name}/(.*)"
           backend {
             service {
-              name = kubernetes_service.holesky_geth_lighthouse.metadata[0].name
+              name = local.name
               port {
-                name = kubernetes_service.holesky_geth_lighthouse.spec[0].port[0].name
+                name = "geth-http"
               }
             }
           }
@@ -59,8 +59,8 @@ resource "kubernetes_ingress_v1" "holesky_geth_lighthouse" {
       }
     }
     tls {
-      hosts       = ["holesky-node.${var.domain}"]
-      secret_name = "holesky-node-lighthouse-tls"
+      hosts       = [var.host]
+      secret_name = "node-${var.name}-tls"
     }
   }
 }

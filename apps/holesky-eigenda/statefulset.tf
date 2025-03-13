@@ -40,13 +40,6 @@ resource "kubernetes_stateful_set" "holesky_eigenda" {
         }
 
         volume {
-          name = "ecdsa"
-          secret {
-            secret_name = "eigenda-ecdsa"
-          }
-        }
-
-        volume {
           name = "bls"
           secret {
             secret_name = "eigenda-bls"
@@ -90,8 +83,8 @@ resource "kubernetes_stateful_set" "holesky_eigenda" {
         }
 
         container {
-          name  = "operator"
-          image = "ghcr.io/layr-labs/eigenda/opr-node:0.8.5"
+          name              = "operator"
+          image             = "ghcr.io/layr-labs/eigenda/opr-node:0.8.5"
           image_pull_policy = "IfNotPresent"
           // mostly already preselect envs from the operator
           env {
@@ -167,11 +160,6 @@ resource "kubernetes_stateful_set" "holesky_eigenda" {
           env {
             name  = "NODE_DATAAPI_URL"
             value = "https://dataapi-holesky.eigenda.xyz"
-          }
-          env {
-            name = "NODE_ECDSA_KEY_FILE"
-            # value = "/app/operator-keys/ecdsa"
-            value = ""
           }
           env {
             name  = "NODE_BLS_KEY_FILE"
