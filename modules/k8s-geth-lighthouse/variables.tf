@@ -52,3 +52,9 @@ variable "lighthouse_image" {
   description = "The image to use for lighthouse"
   type        = string
 }
+
+variable "geth_min_peers" {
+  description = "The minimum number of peers to connect to"
+  type        = number
+  default     = 1
+}
