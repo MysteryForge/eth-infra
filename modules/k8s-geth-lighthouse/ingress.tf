@@ -44,7 +44,7 @@ resource "kubernetes_ingress_v1" "geth_lighthouse" {
           path_type = "ImplementationSpecific"
         }
         path {
-          path = "/ex/${var.name}/(.*)"
+          path = "/el/${var.name}/(.*)"
           backend {
             service {
               name = local.name

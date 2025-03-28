@@ -1,4 +1,7 @@
 resource "kubernetes_stateful_set" "geth_lighthouse" {
+  # this prevents terraform from waiting for the statefulset to be readyconnection {
+  wait_for_rollout = false
+
   metadata {
     name      = local.name
     namespace = var.namespace
@@ -36,6 +39,9 @@ resource "kubernetes_stateful_set" "geth_lighthouse" {
 
       spec {
         termination_grace_period_seconds = 120
+        image_pull_secrets {
+          name = "ghcr-secret"
+        }
         volume {
           name = "geth"
           persistent_volume_claim {
@@ -51,7 +57,7 @@ resource "kubernetes_stateful_set" "geth_lighthouse" {
         volume {
           name = "jwtsecret"
           secret {
-            secret_name = kubernetes_secret.jwtsecret.metadata.0.name
+            secret_name = kubernetes_secret.jwtsecret.metadata[0].name
           }
         }
         container {
@@ -59,28 +65,34 @@ resource "kubernetes_stateful_set" "geth_lighthouse" {
           image             = var.geth_image
           image_pull_policy = "IfNotPresent"
           args              = var.geth_args
-          liveness_probe {
-            failure_threshold = 3
-            http_get {
-              path   = "/"
-              port   = 8545
-              scheme = "HTTP"
+          dynamic "liveness_probe" {
+            for_each = var.enable_probes ? [1] : []
+            content {
+              failure_threshold = 3
+              http_get {
+                path   = "/"
+                port   = 8545
+                scheme = "HTTP"
+              }
+              initial_delay_seconds = 60
+              period_seconds        = 60
+              success_threshold     = 1
+              timeout_seconds       = 5
             }
-            initial_delay_seconds = 60
-            period_seconds        = 60
-            success_threshold     = 1
-            timeout_seconds       = 5
           }
-          readiness_probe {
-            failure_threshold = 3
-            http_get {
-              path   = "/"
-              port   = 3031
-              scheme = "HTTP"
+          dynamic "readiness_probe" {
+            for_each = var.enable_probes ? [1] : []
+            content {
+              failure_threshold = 3
+              http_get {
+                path   = "/"
+                port   = 3031
+                scheme = "HTTP"
+              }
+              period_seconds    = 10
+              success_threshold = 1
+              timeout_seconds   = 5
             }
-            period_seconds    = 10
-            success_threshold = 1
-            timeout_seconds   = 5
           }
           port {
             name           = "geth-discovery"
@@ -122,28 +134,32 @@ resource "kubernetes_stateful_set" "geth_lighthouse" {
             sub_path   = "jwtsecret"
           }
         }
-        container {
-          name              = "geth-probe"
-          image             = "ghcr.io/mysteryforge/eth-kit/execution-probe:d536b1c"
-          image_pull_policy = "IfNotPresent"
-          args = [
-            "--addr",
-            "0.0.0.0",
-            "--port",
-            "3031",
-            "--metrics-addr",
-            "0.0.0.0",
-            "--metrics-port",
-            "3001",
-            "--node-uri",
-            "http://localhost:8545",
-            "--min-peers",
-            "${var.geth_min_peers}",
-          ]
-          port {
-            name           = "geth-probe"
-            container_port = 3031
-            protocol       = "TCP"
+
+        dynamic "container" {
+          for_each = var.enable_probes ? [1] : []
+          content {
+            name              = "geth-probe"
+            image             = "ghcr.io/mysteryforge/eth-kit/execution-probe:d536b1c"
+            image_pull_policy = "IfNotPresent"
+            args = [
+              "--addr",
+              "0.0.0.0",
+              "--port",
+              "3031",
+              "--metrics-addr",
+              "0.0.0.0",
+              "--metrics-port",
+              "3001",
+              "--node-uri",
+              "http://localhost:8545",
+              "--min-peers",
+              "${var.geth_min_peers}",
+            ]
+            port {
+              name           = "geth-probe"
+              container_port = 3031
+              protocol       = "TCP"
+            }
           }
         }
         container {
@@ -151,28 +167,35 @@ resource "kubernetes_stateful_set" "geth_lighthouse" {
           image             = var.lighthouse_image
           image_pull_policy = "IfNotPresent"
           args              = var.lighthouse_args
-          liveness_probe {
-            failure_threshold = 3
-            http_get {
-              path   = "/eth/v1/node/health"
-              port   = 3500
-              scheme = "HTTP"
+          dynamic "liveness_probe" {
+            for_each = var.enable_probes ? [1] : []
+            content {
+              failure_threshold = 3
+              http_get {
+                path   = "/eth/v1/node/health"
+                port   = 3500
+                scheme = "HTTP"
+              }
+              initial_delay_seconds = 60
+              period_seconds        = 60
+              success_threshold     = 1
+              timeout_seconds       = 5
             }
-            initial_delay_seconds = 60
-            period_seconds        = 60
-            success_threshold     = 1
-            timeout_seconds       = 5
           }
-          readiness_probe {
-            failure_threshold = 3
-            http_get {
-              path   = "/"
-              port   = 3032
-              scheme = "HTTP"
+          dynamic "readiness_probe" {
+            for_each = var.enable_probes ? [1] : []
+
+            content {
+              failure_threshold = 3
+              http_get {
+                path   = "/"
+                port   = 3032
+                scheme = "HTTP"
+              }
+              period_seconds    = 10
+              success_threshold = 1
+              timeout_seconds   = 5
             }
-            period_seconds    = 10
-            success_threshold = 1
-            timeout_seconds   = 5
           }
           port {
             name           = "beacon-http"
@@ -200,26 +223,30 @@ resource "kubernetes_stateful_set" "geth_lighthouse" {
             sub_path   = "jwtsecret"
           }
         }
-        container {
-          name              = "lighthouse-probe"
-          image             = "ghcr.io/mysteryforge/eth-kit/beacon-probe:d536b1c"
-          image_pull_policy = "IfNotPresent"
-          args = [
-            "--addr",
-            "0.0.0.0",
-            "--port",
-            "3032",
-            "--metrics-addr",
-            "0.0.0.0",
-            "--metrics-port",
-            "3002",
-            "--node-uri",
-            "http://localhost:3500",
-          ]
-          port {
-            name           = "beacon-probe"
-            container_port = 3032
-            protocol       = "TCP"
+
+        dynamic "container" {
+          for_each = var.enable_probes ? [1] : []
+          content {
+            name              = "lighthouse-probe"
+            image             = "ghcr.io/mysteryforge/eth-kit/beacon-probe:d536b1c"
+            image_pull_policy = "IfNotPresent"
+            args = [
+              "--addr",
+              "0.0.0.0",
+              "--port",
+              "3032",
+              "--metrics-addr",
+              "0.0.0.0",
+              "--metrics-port",
+              "3002",
+              "--node-uri",
+              "http://localhost:3500",
+            ]
+            port {
+              name           = "beacon-probe"
+              container_port = 3032
+              protocol       = "TCP"
+            }
           }
         }
       }

@@ -34,12 +34,12 @@ variable "lighthouse_pvc_size" {
 }
 
 variable "geth_args" {
-  description = "The arguments to pass to geth, make sure that your data dir is /data/geth and your jwt secret is /jwtsecret"
+  description = "The arguments to pass to geth, and make sure you dont owerwrite the data dir, jwt secret and ports"
   type        = list(string)
 }
 
 variable "lighthouse_args" {
-  description = "The arguments to pass to lighthouse, make sure that your data dir is /data/lighthouse and your jwt secret is /jwtsecret"
+  description = "The arguments to pass to lighhouse, and make sure you dont owerwrite the data dir, jwt secret and ports"
   type        = list(string)
 }
 
@@ -51,6 +51,12 @@ variable "geth_image" {
 variable "lighthouse_image" {
   description = "The image to use for lighthouse"
   type        = string
+}
+
+variable "enable_probes" {
+  description = "Enable liveness and readiness probes"
+  type        = bool
+  default     = true
 }
 
 variable "geth_min_peers" {
