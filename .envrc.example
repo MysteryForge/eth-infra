@@ -1,0 +1,30 @@
+###########################################
+# OVH API Configuration
+###########################################
+# Create tokens at:  https://www.ovh.com/auth/api/createToken?GET=/*&POST=/*&PUT=/*&DELETE=/*
+export OVH_ENDPOINT=""              # e.g., ovh-eu
+export OVH_APPLICATION_KEY=""       # From OVH API token page
+export OVH_APPLICATION_SECRET=""    # From OVH API token page
+export OVH_CONSUMER_KEY=""         # From OVH API token page
+
+###########################################
+# OVH OpenStack Configuration
+###########################################
+# Create credentials at: https://us.ovhcloud.com/manager/#/public-cloud/pci/projects/{id}/users
+# Guide: https://docs.ovh.com/us/en/public-cloud/creation-and-deletion-of-openstack-user/
+export OS_AUTH_URL="https://auth.cloud.ovh.net/v3"
+export OS_IDENTITY_API_VERSION="3"
+export OS_USER_DOMAIN_NAME=${OS_USER_DOMAIN_NAME:-"Default"}
+export OS_PROJECT_DOMAIN_NAME=${OS_PROJECT_DOMAIN_NAME:-"Default"}
+
+# Project-specific settings
+export OS_TENANT_ID=""             # Your project ID
+export OS_TENANT_NAME=""           # Your project name
+export OS_REGION_NAME=""           # e.g., BHS5, GRA7
+export OS_USERNAME=""              # OpenStack username
+export OS_PASSWORD=""              # OpenStack password
+
+###########################################
+# Cloudflare Configuration
+###########################################
+export TF_VAR_cloudflare_api_token=""  # Your Cloudflare API token
